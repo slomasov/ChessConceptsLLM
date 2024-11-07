@@ -34,7 +34,9 @@ from searchless_chess.src.transformer import (
 )
 
 import argparse
+import pandas as pd
 
+from tqdm import tqdm
 
 def transformer_decoder_with_intermediate(
     targets: jax.Array,
@@ -249,9 +251,34 @@ def __main__():
     else:
         raise ValueError(f"Unknown policy: {args.policy}")
 
-    board = chess.Board()
-    outputs = play_engine.play(board)
-    print(outputs)
+    # Load and process the DataFrame
+    df = pd.read_csv(args.csv)
+    all_outputs = []
+
+    # Process each position and track progress with tqdm
+    for i in tqdm(range(len(df)), desc="Processing Positions", position=0, leave=True):
+        board = chess.Board(df['Position'][i])
+        outputs = play_engine.play(board)
+        all_outputs.append(outputs)
+
+    # Prepare the DataFrame by adding 'Move' and 'Layer Outputs' columns
+    df['Move'] = [x[0].uci() for x in all_outputs]
+
+    # Concatenate all layer output arrays and store starting indices
+    layer_outputs = [x[1] for x in all_outputs]
+    layer_outputs_stacked = np.stack(layer_outputs, axis=0)  # Combine all arrays
+    start_indices = np.arange(0, len(layer_outputs))
+
+    # Define the output path based on args.csv with '_layer_outputs.npy' suffix
+    layer_output_file = args.csv.replace('.csv', '_layer_outputs.npy')
+    np.save(layer_output_file, layer_outputs_stacked)
+
+    # Add start indices to the DataFrame and metadata for array file path
+    df['Layer Outputs Index'] = start_indices  # Stores the start index of each row's array
+    df['Layer Outputs File'] = layer_output_file  # Adds file path as a column for reference
+
+    # Save the modified DataFrame as CSV
+    df.to_csv(args.csv.replace('.csv', '_with_activation.csv'), index=False)
 
 if __name__ == '__main__':
     __main__()
