@@ -210,6 +210,7 @@ def __main__():
 
     parser.add_argument('--num_data_points', type=int, default=-1, help="How many datapoints to be utilized while labeling the dataset")
     parser.add_argument('--position_key', type=str, default='Position', help="Key for the position column in the CSV file")
+    parser.add_argument('--batch_size', type=int, default=1, help="Batch size for the predictor")
 
     args = parser.parse_args()
     output_size = args.num_return_buckets
@@ -248,7 +249,7 @@ def __main__():
             predict_fn=my_wrap_predict_fn(
                 predictor=predictor,
                 params=params,
-                batch_size=1,
+                batch_size=args.batch_size,
             ), 
         )
     else:
