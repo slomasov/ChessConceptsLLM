@@ -208,6 +208,9 @@ def __main__():
     parser.add_argument('--num_heads', type=int, default=8, help='Number of heads in the transformer')
     parser.add_argument('--num_return_buckets', type=int, default=128, help='Number of return buckets')
 
+    parser.add_argument('--num_data_points', type=int, default=-1, help="How many datapoints to be utilized while labeling the dataset")
+    parser.add_argument('--position_key', type=str, default='Position', help="Key for the position column in the CSV file")
+
     args = parser.parse_args()
     output_size = args.num_return_buckets
 
@@ -253,11 +256,14 @@ def __main__():
 
     # Load and process the DataFrame
     df = pd.read_csv(args.csv)
+    if args.num_data_points != -1:
+        df = df.head(args.num_data_points)
+
     all_outputs = []
 
     # Process each position and track progress with tqdm
     for i in tqdm(range(len(df)), desc="Processing Positions", position=0, leave=True):
-        board = chess.Board(df['Position'][i])
+        board = chess.Board(df[args.position_key][i])
         outputs = play_engine.play(board)
         all_outputs.append(outputs)
 
