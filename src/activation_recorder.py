@@ -209,8 +209,10 @@ def __main__():
     parser.add_argument('--num_return_buckets', type=int, default=128, help='Number of return buckets')
 
     parser.add_argument('--num_data_points', type=int, default=-1, help="How many datapoints to be utilized while labeling the dataset")
+    parser.add_argument("--num_per_label", type=int, default=-1, help="Number of data points to label per label")
     parser.add_argument('--position_key', type=str, default='Position', help="Key for the position column in the CSV file")
     parser.add_argument('--batch_size', type=int, default=1, help="Batch size for the predictor")
+    parser.add_argument('--last_cols_for_concept', type=int, default=-1, help="Number of last columns to consider for the concept")
 
     args = parser.parse_args()
     output_size = args.num_return_buckets
@@ -261,6 +263,17 @@ def __main__():
         df = df.head(args.num_data_points)
 
     all_outputs = []
+
+    if args.num_per_label != -1:
+        # traverse all the last last_cols_for_concept columns, and for each of them, retrieve samples of count num_per_label (retrieve if that column is set to 1)
+        df_subsets = []
+        for i in range(len(df) - 1, len(df) - args.last_cols_for_concept - 1, -1):
+            # now retrieve all the rows where the ith column is set to 1 (make sure to stringify 1 so that it matches the string in the csv)
+            df_subset = df[df.iloc[:, i].astype(str) == '1']
+            # now sample num_per_label rows from this subset
+            df_subset = df_subset.sample(n=args.num_per_label)
+            df_subsets.append(df_subset)
+        df = pd.concat(df_subsets)
 
     # Process each position and track progress with tqdm
     for i in tqdm(range(len(df)), desc="Processing Positions", position=0, leave=True):
