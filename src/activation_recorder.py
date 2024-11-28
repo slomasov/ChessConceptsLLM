@@ -131,8 +131,12 @@ class ActionValueDebugEngine(NeuralEngine):
             axis=1,
         )  # [(M)oves x (S)equence Length]
         layer_outputs, log_probs = self.predict_fn(sequences)  # [M x L x S x E], [M x S x V]
+        
+        if not self.log_all_sequence:
+            layer_outputs = layer_outputs[:, :, -1],  # [M x L x E]
+        
         return {
-            'layer_outputs': layer_outputs[:, :, -1],  # [M x L x E]
+            'layer_outputs': layer_outputs,  # [M x L (x ?) x E]
             'log_probs': log_probs[:, -1],  # [M x V]
             'fen': board.fen(),
         }
@@ -149,7 +153,7 @@ class ActionValueDebugEngine(NeuralEngine):
             best_index = self._rng.choice(np.arange(len(sorted_legal_moves)), p=probs)
         else:
             best_index = np.argmax(win_probs)
-        return sorted_legal_moves[best_index], analysis['layer_outputs'][best_index]  # .., [L x E]
+        return sorted_legal_moves[best_index], analysis['layer_outputs'][best_index]  # .., [L (x ?) x E]
 
 
 def my_wrap_predict_fn(
@@ -213,6 +217,7 @@ def __main__():
     parser.add_argument('--position_key', type=str, default='Position', help="Key for the position column in the CSV file")
     parser.add_argument('--batch_size', type=int, default=1, help="Batch size for the predictor")
     parser.add_argument('--last_cols_for_concept', type=int, default=-1, help="Number of last columns to consider for the concept")
+    parser.add_argument('--log_all_sequence', type=str, default='False', help="Log all the sequence each layer or not")
 
     args = parser.parse_args()
     output_size = args.num_return_buckets
@@ -254,6 +259,7 @@ def __main__():
                 batch_size=args.batch_size,
             ), 
         )
+        play_engine.log_all_sequence = bool(args.log_all_sequence)
     else:
         raise ValueError(f"Unknown policy: {args.policy}")
 
