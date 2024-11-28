@@ -266,6 +266,8 @@ def __main__():
     # Load and process the DataFrame
     df = pd.read_csv(args.csv)
     if args.num_data_points != -1:
+        # shuffle the rows
+        df = df.sample(frac=1)
         df = df.head(args.num_data_points)
 
     all_outputs = []
@@ -276,6 +278,8 @@ def __main__():
         for i in range(len(df) - 1, len(df) - args.last_cols_for_concept - 1, -1):
             # now retrieve all the rows where the ith column is set to 1 (make sure to stringify 1 so that it matches the string in the csv)
             df_subset = df[df.iloc[:, i].astype(str) == '1']
+            # assert the size is not less than num_per_label
+            assert len(df_subset) >= args.num_per_label
             # now sample num_per_label rows from this subset
             df_subset = df_subset.sample(n=args.num_per_label)
             df_subsets.append(df_subset)
