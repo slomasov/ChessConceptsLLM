@@ -288,7 +288,7 @@ def __main__():
 
     # Process each position and track progress with tqdm
     for i in tqdm(range(len(df)), desc="Processing Positions", position=0, leave=True):
-        board = chess.Board(df[args.position_key][i])
+        board = chess.Board(df[args.position_key].iloc[i])
         outputs = play_engine.play(board)
         all_outputs.append(outputs)
 
