@@ -218,6 +218,7 @@ def __main__():
     parser.add_argument('--batch_size', type=int, default=1, help="Batch size for the predictor")
     parser.add_argument('--last_cols_for_concept', type=int, default=-1, help="Number of last columns to consider for the concept")
     parser.add_argument('--log_all_sequence', type=str, default='False', help="Log all the sequence each layer or not")
+    parser.add_argument('--save_step_count', type=int, default=500, help="Save the layer outputs after this many steps")
 
     args = parser.parse_args()
     output_size = args.num_return_buckets
@@ -287,18 +288,33 @@ def __main__():
         df = pd.concat(df_subsets)
 
     # Process each position and track progress with tqdm
+    step_count = args.save_step_count
+    best_moves, last_layer_outputs = [], []
+    layer_outputs_stacked = None
     for i in tqdm(range(len(df)), desc="Processing Positions", position=0, leave=True):
         board = chess.Board(df[args.position_key].iloc[i])
-        outputs = play_engine.play(board)
-        all_outputs.append(outputs)
+        best_move, layer_outputs = play_engine.play(board)
+        best_moves.append(best_move)
+        last_layer_outputs.append(layer_outputs)
+        if (i + 1) % step_count == 0:
+            if layer_outputs_stacked is None:
+                layer_outputs_stacked = np.stack(last_layer_outputs, axis=0)
+            else:
+                layer_outputs_stacked = np.concatenate([layer_outputs_stacked, np.stack(last_layer_outputs, axis=0)], axis=0)
+            last_layer_outputs = []
+
+    if len(last_layer_outputs) > 0:
+        if layer_outputs_stacked is None:
+            layer_outputs_stacked = np.stack(last_layer_outputs, axis=0)
+        else:
+            layer_outputs_stacked = np.concatenate([layer_outputs_stacked, np.stack(last_layer_outputs, axis=0)], axis=0)
 
     # Prepare the DataFrame by adding 'Move' and 'Layer Outputs' columns
-    df['Move'] = [x[0].uci() for x in all_outputs]
+    df['Move'] = [x.uci() for x in best_moves]
 
     # Concatenate all layer output arrays and store starting indices
-    layer_outputs = [x[1] for x in all_outputs]
-    layer_outputs_stacked = np.stack(layer_outputs, axis=0)  # Combine all arrays
-    start_indices = np.arange(0, len(layer_outputs))
+    # layer_outputs_stacked = np.stack(layer_outputs, axis=0)  # Combine all arrays
+    start_indices = np.arange(0, len(layer_outputs_stacked))
 
     # Define the output path based on args.csv with '_layer_outputs.npy' suffix
     layer_output_file = args.csv.replace('.csv', '_layer_outputs.npy')
