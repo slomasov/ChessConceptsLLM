@@ -275,7 +275,8 @@ def __main__():
     if args.num_per_label != -1:
         # traverse all the last last_cols_for_concept columns, and for each of them, retrieve samples of count num_per_label (retrieve if that column is set to 1)
         df_subsets = []
-        for i in range(len(df) - 1, len(df) - args.last_cols_for_concept - 1, -1):
+        num_cols = len(df.columns)
+        for i in range(num_cols - args.last_cols_for_concept, num_cols):
             # now retrieve all the rows where the ith column is set to 1 (make sure to stringify 1 so that it matches the string in the csv)
             df_subset = df[df.iloc[:, i].astype(str) == '1']
             # assert the size is not less than num_per_label
