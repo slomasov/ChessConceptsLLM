@@ -218,7 +218,7 @@ def __main__():
     parser.add_argument('--batch_size', type=int, default=1, help="Batch size for the predictor")
     parser.add_argument('--last_cols_for_concept', type=int, default=-1, help="Number of last columns to consider for the concept")
     parser.add_argument('--log_all_sequence', type=str, default='False', help="Log all the sequence each layer or not")
-    parser.add_argument('--save_step_count', type=int, default=500, help="Save the layer outputs after this many steps")
+    parser.add_argument('--save_step_count', type=int, default=200, help="Save the layer outputs after this many steps")
 
     args = parser.parse_args()
     output_size = args.num_return_buckets
@@ -289,40 +289,43 @@ def __main__():
 
     # Process each position and track progress with tqdm
     step_count = args.save_step_count
-    best_moves, last_layer_outputs = [], []
-    layer_outputs_stacked = None
+    best_moves, start_indices, layer_output_files = [], [], []
+    last_layer_outputs = []
+    it = 0
     for i in tqdm(range(len(df)), desc="Processing Positions", position=0, leave=True):
         board = chess.Board(df[args.position_key].iloc[i])
+        start_indices.append(len(last_layer_outputs))
+        layer_output_files.append(args.csv.replace('.csv', f'_layer_outputs_{it}.npy'))
         best_move, layer_outputs = play_engine.play(board)
         best_moves.append(best_move)
         last_layer_outputs.append(layer_outputs)
-        if (i + 1) % step_count == 0:
-            if layer_outputs_stacked is None:
-                layer_outputs_stacked = np.stack(last_layer_outputs, axis=0)
-            else:
-                layer_outputs_stacked = np.concatenate([layer_outputs_stacked, np.stack(last_layer_outputs, axis=0)], axis=0)
+        if (i + 1) % step_count == 0 or i == len(df) - 1:
+            if len(last_layer_outputs) == 0:
+                continue
+            last_layer_outputs = np.stack(last_layer_outputs, axis=0)
+            layer_output_file = layer_output_files[-1]
+            np.save(layer_output_file, last_layer_outputs)   
+            # if layer_outputs_stacked is None:
+            #     layer_outputs_stacked = np.stack(last_layer_outputs, axis=0)
+            # else:
+            #     layer_outputs_stacked = np.concatenate([layer_outputs_stacked, np.stack(last_layer_outputs, axis=0)], axis=0)
             last_layer_outputs = []
-
-    if len(last_layer_outputs) > 0:
-        if layer_outputs_stacked is None:
-            layer_outputs_stacked = np.stack(last_layer_outputs, axis=0)
-        else:
-            layer_outputs_stacked = np.concatenate([layer_outputs_stacked, np.stack(last_layer_outputs, axis=0)], axis=0)
+            it += 1
 
     # Prepare the DataFrame by adding 'Move' and 'Layer Outputs' columns
     df['Move'] = [x.uci() for x in best_moves]
 
     # Concatenate all layer output arrays and store starting indices
     # layer_outputs_stacked = np.stack(layer_outputs, axis=0)  # Combine all arrays
-    start_indices = np.arange(0, len(layer_outputs_stacked))
+    # start_indices = np.arange(0, len(layer_outputs_stacked))
 
     # Define the output path based on args.csv with '_layer_outputs.npy' suffix
-    layer_output_file = args.csv.replace('.csv', '_layer_outputs.npy')
-    np.save(layer_output_file, layer_outputs_stacked)
+    # layer_output_file = args.csv.replace('.csv', '_layer_outputs.npy')
+    # np.save(layer_output_file, layer_outputs_stacked)
 
     # Add start indices to the DataFrame and metadata for array file path
     df['Layer Outputs Index'] = start_indices  # Stores the start index of each row's array
-    df['Layer Outputs File'] = layer_output_file  # Adds file path as a column for reference
+    df['Layer Outputs File'] = layer_output_files  # Adds file path as a column for reference
 
     # Save the modified DataFrame as CSV
     df.to_csv(args.csv.replace('.csv', '_with_activation.csv'), index=False)
