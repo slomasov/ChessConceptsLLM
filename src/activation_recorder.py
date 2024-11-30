@@ -76,9 +76,11 @@ def transformer_decoder_with_intermediate(
         mlp_output = _mlp_block(mlp_input, config)
         h += mlp_output
 
+    layer_outputs.append(jnp.expand_dims(h, axis=1))  # [B, 1, T, D]
+
     if config.apply_post_ln:
         h = layer_norm(h)
-    layer_outputs.append(jnp.expand_dims(h, axis=1))  # [B, 1, T, D]
+        layer_outputs.append(jnp.expand_dims(h, axis=1))  # [B, 1, T, D]
     logits = hk.Linear(config.output_size)(h)
     
     layer_outputs = jnp.concatenate(layer_outputs, axis=1)
