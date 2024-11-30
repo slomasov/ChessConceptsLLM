@@ -205,6 +205,7 @@ def my_wrap_predict_fn(
 def __main__():
     parser = argparse.ArgumentParser()
     parser.add_argument('--csv', type=str, help='CSV file to read FENs from')
+    parser.add_argument('--npy_dir', type=str, help='Directory to save the layer outputs to')
     # Model
     parser.add_argument('--checkpoint_dir', type=str, default='/home/mhamza/searchless_chess/checkpoints/270M', help='Directory to load the model from')
     parser.add_argument('--step', type=int, default=6400000, help='Step to load the model from')
@@ -297,7 +298,9 @@ def __main__():
     for i in tqdm(range(len(df)), desc="Processing Positions", position=0, leave=True):
         board = chess.Board(df[args.position_key].iloc[i])
         start_indices.append(len(last_layer_outputs))
-        layer_output_files.append(args.csv.replace('.csv', f'_layer_outputs_{it}.npy'))
+        mod_file_name = os.path.join(args.npy_dir, args.csv.replace('.csv', f'_layer_outputs_{it}.npy').split('/')[-1])
+        # layer_output_files.append(os.path.join(args.npy_dir, f'layer_outputs_{it}.npy'))
+        layer_output_files.append(mod_file_name)
         best_move, layer_outputs = play_engine.play(board)
         best_moves.append(best_move)
         last_layer_outputs.append(layer_outputs)
