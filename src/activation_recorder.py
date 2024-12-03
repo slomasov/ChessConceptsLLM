@@ -54,19 +54,22 @@ def transformer_decoder_with_intermediate(
         targets: The integer target values, shape [B, T].
         config: The config to use for the transformer.
     """
-    # Right shift the targets to get the inputs (the first token is now a 0).
-    inputs = shift_right(targets)
-    
-    # Embeds the inputs and adds positional encodings.
-    embeddings = embed_sequences(inputs, config)
-    h = embeddings  # [B, T, D]
-    
     # List to store the outputs of each layer
     layer_outputs = []
 
+    # Right shift the targets to get the inputs (the first token is now a 0).
+    inputs = shift_right(targets)
+    if config.log_only_input:
+        layer_outputs.append(jnp.expand_dims(inputs, axis=1))  # [B, 1, T]
+        
+    # Embeds the inputs and adds positional encodings.
+    embeddings = embed_sequences(inputs, config)
+    h = embeddings  # [B, T, D]
+
     for _ in range(config.num_layers):
         # record the output of each layer
-        layer_outputs.append(jnp.expand_dims(h, axis=1))  # [B, 1, T, D]
+        if not config.log_only_input:
+            layer_outputs.append(jnp.expand_dims(h, axis=1))  # [B, 1, T, D]
         
         attention_input = layer_norm(h)
         attention = _attention_block(attention_input, config)
@@ -76,11 +79,13 @@ def transformer_decoder_with_intermediate(
         mlp_output = _mlp_block(mlp_input, config)
         h += mlp_output
 
-    layer_outputs.append(jnp.expand_dims(h, axis=1))  # [B, 1, T, D]
+    if not config.log_only_input:
+        layer_outputs.append(jnp.expand_dims(h, axis=1))  # [B, 1, T, D]
 
     if config.apply_post_ln:
         h = layer_norm(h)
-        layer_outputs.append(jnp.expand_dims(h, axis=1))  # [B, 1, T, D]
+        if not config.log_only_input:
+            layer_outputs.append(jnp.expand_dims(h, axis=1))  # [B, 1, T, D]
     logits = hk.Linear(config.output_size)(h)
     
     layer_outputs = jnp.concatenate(layer_outputs, axis=1)
@@ -222,6 +227,7 @@ def __main__():
     parser.add_argument('--last_cols_for_concept', type=int, default=-1, help="Number of last columns to consider for the concept")
     parser.add_argument('--log_all_sequence', type=str, default='False', help="Log all the sequence each layer or not")
     parser.add_argument('--save_step_count', type=int, default=200, help="Save the layer outputs after this many steps")
+    parser.add_argument('--log_only_input', type=str, default='False', help="Log only the input sequence")
 
     args = parser.parse_args()
     output_size = args.num_return_buckets
@@ -237,6 +243,7 @@ def __main__():
         apply_post_ln=True,
         apply_qk_layernorm=False,
         use_causal_mask=False,
+        log_only_input=bool(args.log_only_input),
     )
 
     predictor = build_transformer_predictor_with_intermediate(config=predictor_config)
