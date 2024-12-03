@@ -41,6 +41,7 @@ from tqdm import tqdm
 def transformer_decoder_with_intermediate(
     targets: jax.Array,
     config: TransformerConfig,
+    log_only_input: bool = False,
 ) -> jax.Array:
     """Returns the transformer decoder output, shape [B, T, V].
 
@@ -59,7 +60,7 @@ def transformer_decoder_with_intermediate(
 
     # Right shift the targets to get the inputs (the first token is now a 0).
     inputs = shift_right(targets)
-    if config.log_only_input:
+    if log_only_input:
         layer_outputs.append(jnp.expand_dims(inputs, axis=1))  # [B, 1, T]
         
     # Embeds the inputs and adds positional encodings.
@@ -68,7 +69,7 @@ def transformer_decoder_with_intermediate(
 
     for _ in range(config.num_layers):
         # record the output of each layer
-        if not config.log_only_input:
+        if not log_only_input:
             layer_outputs.append(jnp.expand_dims(h, axis=1))  # [B, 1, T, D]
         
         attention_input = layer_norm(h)
@@ -79,12 +80,12 @@ def transformer_decoder_with_intermediate(
         mlp_output = _mlp_block(mlp_input, config)
         h += mlp_output
 
-    if not config.log_only_input:
+    if not log_only_input:
         layer_outputs.append(jnp.expand_dims(h, axis=1))  # [B, 1, T, D]
 
     if config.apply_post_ln:
         h = layer_norm(h)
-        if not config.log_only_input:
+        if not log_only_input:
             layer_outputs.append(jnp.expand_dims(h, axis=1))  # [B, 1, T, D]
     logits = hk.Linear(config.output_size)(h)
     
@@ -97,9 +98,10 @@ def transformer_decoder_with_intermediate(
 
 def build_transformer_predictor_with_intermediate(
     config: TransformerConfig,
+    log_only_input: bool = False,
 ) -> constants.Predictor:
     """Returns a transformer predictor."""
-    model = hk.transform(functools.partial(transformer_decoder_with_intermediate, config=config))
+    model = hk.transform(functools.partial(transformer_decoder_with_intermediate, config=config, log_only_input=log_only_input))
     return constants.Predictor(initial_params=model.init, predict=model.apply)
 
 
@@ -243,10 +245,9 @@ def __main__():
         apply_post_ln=True,
         apply_qk_layernorm=False,
         use_causal_mask=False,
-        log_only_input=bool(args.log_only_input),
     )
 
-    predictor = build_transformer_predictor_with_intermediate(config=predictor_config)
+    predictor = build_transformer_predictor_with_intermediate(config=predictor_config, log_only_input=bool(args.log_only_input))
 
     _, return_buckets_values = utils.get_uniform_buckets_edges_values(
         args.num_return_buckets
