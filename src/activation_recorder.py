@@ -90,7 +90,7 @@ def transformer_decoder_with_intermediate(
     logits = hk.Linear(config.output_size)(h)
     
     layer_outputs = jnp.concatenate(layer_outputs, axis=1)
-    assert len(layer_outputs.shape) == 4, f"Expected 4D output, got {layer_outputs.shape}"
+    # assert len(layer_outputs.shape) == 4, f"Expected 4D output, got {layer_outputs.shape}"
 
     probs = jnn.log_softmax(logits, axis=-1)
     return layer_outputs, probs
@@ -224,12 +224,17 @@ def __main__():
 
     parser.add_argument('--num_data_points', type=int, default=-1, help="How many datapoints to be utilized while labeling the dataset")
     parser.add_argument("--num_per_label", type=int, default=-1, help="Number of data points to label per label")
+    parser.add_argument("--num_per_anti_label", type=int, default=-1, help="Number of data points to have 0 for each label")
     parser.add_argument('--position_key', type=str, default='Position', help="Key for the position column in the CSV file")
     parser.add_argument('--batch_size', type=int, default=1, help="Batch size for the predictor")
     parser.add_argument('--last_cols_for_concept', type=int, default=-1, help="Number of last columns to consider for the concept")
     parser.add_argument('--log_all_sequence', type=str, default='False', help="Log all the sequence each layer or not")
     parser.add_argument('--save_step_count', type=int, default=200, help="Save the layer outputs after this many steps")
     parser.add_argument('--log_only_input', type=str, default='False', help="Log only the input sequence")
+<<<<<<< HEAD
+=======
+    parser.add_argument('--csv_suffix', type=str, default='', help="The suffix of the csv of recorded activations")
+>>>>>>> 4e9c3d4 (Update the repo)
 
     args = parser.parse_args()
     output_size = args.num_return_buckets
@@ -247,7 +252,7 @@ def __main__():
         use_causal_mask=False,
     )
 
-    predictor = build_transformer_predictor_with_intermediate(config=predictor_config, log_only_input=bool(args.log_only_input))
+    predictor = build_transformer_predictor_with_intermediate(config=predictor_config, log_only_input=eval(args.log_only_input))
 
     _, return_buckets_values = utils.get_uniform_buckets_edges_values(
         args.num_return_buckets
@@ -271,7 +276,7 @@ def __main__():
                 batch_size=args.batch_size,
             ), 
         )
-        play_engine.log_all_sequence = bool(args.log_all_sequence)
+        play_engine.log_all_sequence = eval(args.log_all_sequence)
     else:
         raise ValueError(f"Unknown policy: {args.policy}")
 
@@ -286,17 +291,59 @@ def __main__():
 
     if args.num_per_label != -1:
         # traverse all the last last_cols_for_concept columns, and for each of them, retrieve samples of count num_per_label (retrieve if that column is set to 1)
-        df_subsets = []
+        df_subset = None
         num_cols = len(df.columns)
         for i in range(num_cols - args.last_cols_for_concept, num_cols):
             # now retrieve all the rows where the ith column is set to 1 (make sure to stringify 1 so that it matches the string in the csv)
-            df_subset = df[df.iloc[:, i].astype(str) == '1']
+            df_subset_i = df[df.iloc[:, i].astype(str) == '1']
             # assert the size is not less than num_per_label
-            assert len(df_subset) >= args.num_per_label
-            # now sample num_per_label rows from this subset
-            df_subset = df_subset.sample(n=args.num_per_label)
-            df_subsets.append(df_subset)
-        df = pd.concat(df_subsets)
+            assert len(df_subset_i) >= args.num_per_label
+            if df_subset is None:
+                count_i = 0
+            else:
+                count_i = df_subset[df_subset.iloc[:, i].astype(str) == '1'].shape[0]
+            if count_i >= args.num_per_label:
+                continue
+            df_subset_i = df_subset_i.sample(n=args.num_per_label - count_i)
+            if df_subset is None:
+                df_subset = df_subset_i
+            else:
+                df_subset = pd.concat([df_subset, df_subset_i])
+
+        if args.num_per_anti_label != -1:
+            for i in range(num_cols - args.last_cols_for_concept, num_cols):
+                # check if the number of rows in the subset where the column is set to 0 is less than num_per_anti_label
+                total_count = len(df_subset[df_subset.iloc[:, i].astype(str) == '0'])
+                if total_count < args.num_per_anti_label:
+                    # sample remaining rows from df where the ith column is set to 0
+                    df_subset_anti = df[df.iloc[:, i].astype(str) == '0']
+                    df_subset_anti = df_subset_anti.sample(n=args.num_per_anti_label - total_count)
+                    df_subset = pd.concat([df_subset, df_subset_anti])
+        df = df_subset
+        changed = True
+    if args.num_per_label != -1 and args.num_per_anti_label != -1:
+        while changed:
+            # Initialize flag to check if changes occurred
+            changed = False
+            # Iterate over a copy of the DataFrame's index to avoid reindexing issues
+            for row_index in df.index:
+                # Create a DataFrame by removing the current row
+                removed_df = df.drop(row_index)
+                ok = True
+                # Check the value counts for each concept
+                for i in range(num_cols - args.last_cols_for_concept, num_cols):
+                    val_counts = removed_df[df.columns[i]].value_counts()
+                    # Ensure both 0 and 1 exist in the value counts
+                    count_0 = val_counts.get(0, 0)
+                    count_1 = val_counts.get(1, 0)
+                    if count_0 < args.num_per_anti_label or count_1 < args.num_per_label:
+                        ok = False
+                        break
+                # If removing the row still satisfies the condition, update the DataFrame
+                if ok:
+                    df = removed_df
+                    changed = True
+                    break
 
     # Process each position and track progress with tqdm
     step_count = args.save_step_count
@@ -318,30 +365,18 @@ def __main__():
             last_layer_outputs = np.stack(last_layer_outputs, axis=0)
             layer_output_file = layer_output_files[-1]
             np.save(layer_output_file, last_layer_outputs)   
-            # if layer_outputs_stacked is None:
-            #     layer_outputs_stacked = np.stack(last_layer_outputs, axis=0)
-            # else:
-            #     layer_outputs_stacked = np.concatenate([layer_outputs_stacked, np.stack(last_layer_outputs, axis=0)], axis=0)
             last_layer_outputs = []
             it += 1
 
     # Prepare the DataFrame by adding 'Move' and 'Layer Outputs' columns
     df['Move'] = [x.uci() for x in best_moves]
 
-    # Concatenate all layer output arrays and store starting indices
-    # layer_outputs_stacked = np.stack(layer_outputs, axis=0)  # Combine all arrays
-    # start_indices = np.arange(0, len(layer_outputs_stacked))
-
-    # Define the output path based on args.csv with '_layer_outputs.npy' suffix
-    # layer_output_file = args.csv.replace('.csv', '_layer_outputs.npy')
-    # np.save(layer_output_file, layer_outputs_stacked)
-
     # Add start indices to the DataFrame and metadata for array file path
     df['Layer Outputs Index'] = start_indices  # Stores the start index of each row's array
     df['Layer Outputs File'] = layer_output_files  # Adds file path as a column for reference
 
     # Save the modified DataFrame as CSV
-    df.to_csv(args.csv.replace('.csv', '_with_activation.csv'), index=False)
+    df.to_csv(args.csv.replace('.csv', f'{args.csv_suffix}.csv'), index=False)
 
 if __name__ == '__main__':
     __main__()
