@@ -231,10 +231,7 @@ def __main__():
     parser.add_argument('--log_all_sequence', type=str, default='False', help="Log all the sequence each layer or not")
     parser.add_argument('--save_step_count', type=int, default=200, help="Save the layer outputs after this many steps")
     parser.add_argument('--log_only_input', type=str, default='False', help="Log only the input sequence")
-<<<<<<< HEAD
-=======
     parser.add_argument('--csv_suffix', type=str, default='', help="The suffix of the csv of recorded activations")
->>>>>>> 4e9c3d4 (Update the repo)
 
     args = parser.parse_args()
     output_size = args.num_return_buckets

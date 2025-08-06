@@ -15,8 +15,23 @@ import random
 import numpy as np
 import pandas as pd
 
+import torch.nn.init as init
+
+
+import torch
+import torch.optim as optim
+import torch.nn.functional as F
+from tqdm import tqdm
+import copy
+
+from types import SimpleNamespace
+
+from sklearn.model_selection import KFold, train_test_split
+
+import argparse
+
 class DatasetStaticLoad(torch.utils.data.Dataset):
-    def __init__(self, csv_file_path, concept_name=None, all_sequence=False, in_local=True, device="cuda", max_pos_samples=300):
+    def __init__(self, csv_file_path, concept_name=None, all_sequence=False, in_local=False, device="cuda", max_pos_samples=300):
         self.csv_file_path = csv_file_path
         self.concept_name = concept_name
         self.data = pd.read_csv(csv_file_path)
@@ -37,8 +52,10 @@ class DatasetStaticLoad(torch.utils.data.Dataset):
 
         for i, row in self.data.iterrows():
             activation_file = row['Layer Outputs File']
-            if self.in_local:
-                activation_file = activation_file.replace('/content/drive/Shareddrives/CS229/searchless_chess/data/concept_data/npys/', '/content/')
+            #if self.in_local: # An optimization for running in the google colab environment (you can ignore)
+            #    activation_file = activation_file.replace('/content/drive/Shareddrives/CS229/searchless_chess/data/concept_data/npys/', '/content/')
+            #replace activation file with the path to the activations
+            activation_file = activation_file.replace('/content/drive/Shareddrives/CS229/', '/home/semyonlomasov/cs229_drive/')
             activation_idx = int(row['Layer Outputs Index'])
             activations = torch.from_numpy(np.load(activation_file))
             if len(activations.shape) == 3:
@@ -91,8 +108,6 @@ class DatasetStaticLoad(torch.utils.data.Dataset):
             del self.activations
             self.activations = None
         torch.cuda.empty_cache()  # Free any unused cached memory
-
-import torch.nn.init as init
 
 class MinConceptVector(nn.Module):
     def __init__(self, feature_dim):
@@ -228,20 +243,12 @@ def evaluate_model(model, dataloader, config):
                 raise ValueError("Invalid model name")
 
             total_loss += constraint_loss.item() + l1_loss.item()
-            # total_loss += constraint_loss.item()
 
 
     avg_constraint_satisfaction = total_constraints_satisfied / total_constraints if total_constraints > 0 else 0
     avg_loss = total_loss / total_constraints if total_constraints > 0 else 0
 
     return avg_constraint_satisfaction, avg_loss
-
-
-import torch
-import torch.optim as optim
-import torch.nn.functional as F
-from tqdm import tqdm
-import copy
 
 def train_model(model, train_dataloader, val_dataloader, config):
     optimizer = optim.Adam(model.parameters(), lr=config.lr)
@@ -329,8 +336,6 @@ def train_model(model, train_dataloader, val_dataloader, config):
 
     return best_model_state, best_val_accuracy, best_val_loss
 
-# 100 = (k-1)*w
-from sklearn.model_selection import KFold, train_test_split
 
 def k_fold_cross_validation(config):
     kfold = KFold(n_splits=config.k, shuffle=True, random_state=42)
@@ -397,7 +402,6 @@ def k_fold_cross_validation(config):
 def eval_concept(config):
     # Load the dataset
     config.dataset = config.dataset_class(config.csv_file_path, config.concept_name, config.all_sequence)
-    # config.feature_dim = config.dataset.activations.shape[-1]  # D, the feature dimension of each layer
     overall_constraint_satisfactions, overall_losses = [], []
     for it in range(config.num_its):
         # Run k-fold cross-validation
@@ -412,8 +416,6 @@ def eval_concept(config):
 
     return np.mean(overall_constraint_satisfactions), np.mean(overall_losses)
 
-from types import SimpleNamespace
-# helper function to convert dictionary to a namespace (dot-accessible attributes)
 def dict_to_namespace(d):
     return SimpleNamespace(
         **{k: dict_to_namespace(v) if isinstance(v, dict) else v for k, v in d.items()}
@@ -439,15 +441,13 @@ config = {
     'verbose': False,
 }
 
-import argparse
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--csv_file_path", type=str, default=None)
 parser.add_argument("--concept_name", type=str, default=None)
 parser.add_argument("--layer_idx", type=int, default=None)
 parser.add_argument("--seq_type", type=str, default="input")
 parser.add_argument("--model_idx", type=int, default=0)
-
-# parser.add_argument("--model_name", type=str)
 
 args = parser.parse_args()
 config['csv_file_path'] = args.csv_file_path

@@ -27,12 +27,12 @@ wget https://storage.googleapis.com/searchless_chess/data/test/behavioral_clonin
 wget https://storage.googleapis.com/searchless_chess/data/test/state_value_data.bag
 cd ..
 
-# mkdir train
-# cd train
-# for idx in $(seq -f "%05g" 0 2147)
-# do
-#   wget https://storage.googleapis.com/searchless_chess/data/train/action_value-$idx-of-02148_data.bag
-# done
-# wget https://storage.googleapis.com/searchless_chess/data/train/behavioral_cloning_data.bag
-# wget https://storage.googleapis.com/searchless_chess/data/train/state_value_data.bag
-# cd ..
+mkdir train
+cd train
+for idx in $(seq -f "%05g" 0 2147)
+do
+  wget https://storage.googleapis.com/searchless_chess/data/train/action_value-$idx-of-02148_data.bag
+done
+wget https://storage.googleapis.com/searchless_chess/data/train/behavioral_cloning_data.bag
+wget https://storage.googleapis.com/searchless_chess/data/train/state_value_data.bag
+cd ..
