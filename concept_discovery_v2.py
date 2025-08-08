@@ -54,6 +54,12 @@ class DatasetStaticLoad(torch.utils.data.Dataset):
         self.in_local = in_local
         self.device = device  # Device to preload data
         self.load_activations()
+        if len(self.positive_row_idx) == 0 or len(self.negative_rows_idx) == 0:
+            raise ValueError(
+                f"Dataset for concept '{self.concept_name}' needs at least one "
+                f"positive and one negative row, but got "
+                f"{len(self.positive_row_idx)} positive / "
+                f"{len(self.negative_rows_idx)} negative.")
 
     def load_activations(self):
         self.activations = None
