@@ -8,7 +8,7 @@ echo "Launching input-token-recording jobs …"
 ###############################################################################
 # lichess_puzzles_openings  →  GPU 0
 ###############################################################################
-CUDA_VISIBLE_DEVICES=0 nohup bash -c "
+CUDA_VISIBLE_DEVICES=3 nohup bash -c "
   npy_dir=\"${ABSOLUTE_PATH}/searchless_chess/data/concept_data/npys/opening_input_tokens/\"
   rm -rf \"\$npy_dir\" && mkdir -p \"\$npy_dir\"
 
@@ -32,7 +32,7 @@ CUDA_VISIBLE_DEVICES=0 nohup bash -c "
 ###############################################################################
 # stockfish_boolean_concepts_primary  →  GPU 1
 ###############################################################################
-CUDA_VISIBLE_DEVICES=1 nohup bash -c "
+CUDA_VISIBLE_DEVICES=4 nohup bash -c "
   npy_dir=\"${ABSOLUTE_PATH}/searchless_chess/data/concept_data/npys/stockfish_input_tokens/\"
   rm -rf \"\$npy_dir\" && mkdir -p \"\$npy_dir\"
 
@@ -57,7 +57,7 @@ CUDA_VISIBLE_DEVICES=1 nohup bash -c "
 ###############################################################################
 # sts_all_concepts  →  GPU 2
 ###############################################################################
-CUDA_VISIBLE_DEVICES=2 nohup bash -c "
+CUDA_VISIBLE_DEVICES=5 nohup bash -c "
   npy_dir=\"${ABSOLUTE_PATH}/searchless_chess/data/concept_data/npys/sts_all_input_tokens/\"
   rm -rf \"\$npy_dir\" && mkdir -p \"\$npy_dir\"
 
@@ -80,7 +80,7 @@ CUDA_VISIBLE_DEVICES=2 nohup bash -c "
 ###############################################################################
 # fischer_random  →  GPU 3
 ###############################################################################
-CUDA_VISIBLE_DEVICES=3 nohup bash -c "
+CUDA_VISIBLE_DEVICES=6 nohup bash -c "
   npy_dir=\"${ABSOLUTE_PATH}/searchless_chess/data/concept_data/npys/fischer_random_input_tokens/\"
   rm -rf \"\$npy_dir\" && mkdir -p \"\$npy_dir\"
 
