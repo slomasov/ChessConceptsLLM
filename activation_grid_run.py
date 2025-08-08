@@ -29,8 +29,19 @@ LAYER_IDS  = [2,5,10,15]
 SEQ_TYPES  = ["activations"]
 MODEL_IDXS = [0,1,2]           # 0=LR, 1=MinConceptVector, 2=AllSeqNN
 
+
+MEM_THRESHOLD_MB = 1800
 GPUS             = [3,4,5,6]
 MAX_JOBS_PER_GPU = 1
+
+def gpu_mem_used(gpu_id: int) -> int:
+    """Return memory-used on gpu_id in MB (via nvidia-smi)."""
+    out = subprocess.check_output(
+        ["nvidia-smi", "--query-gpu=memory.used",
+         "--format=csv,noheader,nounits"]
+    )
+    return int(out.decode().strip().splitlines()[gpu_id])
+
 #NUM_ITS          = 3       # forwarded to v2 script
 # ──────────────────────────────────────────────────────────────── #
 
@@ -96,36 +107,43 @@ def launch_job(cmd, log_path, gpu):
 
 def main():
     param_grid = itertools.product(
-        TRAIN_CSVS_1, TRAIN_CSVS_2,
+        TRAIN_CSVS_1, TRAIN_CSVS_2, TEST_CSVS,
         CONCEPTS, LAYER_IDS, SEQ_TYPES, MODEL_IDXS
     )
 
     gpu_slots = {g: [] for g in GPUS}
 
-    for pair1, pair2, concept, layer, seq_type, model_idx in param_grid:
+    for pair1, pair2, test_pair, concept, layer, seq_type, model_idx in param_grid:
         # build final training/test pairs lists after None-filtering
         train_pairs = [pair for pair in (pair1, pair2) if pair[0] is not None]
         if not train_pairs:       # both None → skip
             continue
-        test_pairs = [pair for pair in TEST_CSVS if pair[0] is not None]
+        test_pairs = [pair for pair in (test_pair,) if pair[0] is not None]
 
         # wait until some GPU has a free slot
         while True:
+            launched = False
             for gpu, procs in gpu_slots.items():
+                # prune finished processes
                 gpu_slots[gpu] = [p for p in procs if p.poll() is None]
-                if len(gpu_slots[gpu]) < MAX_JOBS_PER_GPU:
+
+                mem_used = gpu_mem_used(gpu)
+                if (len(gpu_slots[gpu]) < MAX_JOBS_PER_GPU
+                        and mem_used < MEM_THRESHOLD_MB):
                     cmd, log_path = build_cmd(
                         gpu, train_pairs, test_pairs,
                         concept, layer, seq_type, model_idx
                     )
                     proc = launch_job(cmd, log_path, gpu)
                     gpu_slots[gpu].append(proc)
-                    print(f"[GPU {gpu}] launched {' '.join(cmd)}")
-                    break
-            else:
-                time.sleep(10)
-                continue  # GPUs still busy
-            break         # job launched → proceed
+                    print(f"[GPU {gpu}] {mem_used} MB → launched "
+                          f"{' '.join(cmd)}")
+                    launched = True
+                    break          # out of for-loop over GPUs
+
+            if launched:
+                break              # job started → proceed to next combo
+            time.sleep(10)         # otherwise wait and retry
 
     # wait for all jobs to finish
     for procs in gpu_slots.values():
