@@ -22,9 +22,10 @@ TEST_CSVS = [
 ]
 
 #Concepts: Open Files and Diagonals,Knight Outposts,Advancement of f/g/h pawns,Advancement of a/b/c Pawns,Center Control,Pawn Play in the Center
-CONCEPTS   = ["Open Files and Diagonals", "Knight Outposts",
-             "Advancement of f/g/h pawns", "Advancement of a/b/c Pawns",
-             "Center Control", "Pawn Play in the Center"]
+# CONCEPTS   = ["Open Files and Diagonals", "Knight Outposts",
+#              "Advancement of f/g/h Pawns", "Advancement of a/b/c Pawns",
+#              "Center Control", "Pawn Play in the Center"]
+CONCEPTS   = ["Open", "Advancement of f/g/h Pawns"]
 LAYER_IDS  = [2,5,10,15]
 SEQ_TYPES  = ["activations"]
 MODEL_IDXS = [0,1,2]           # 0=LR, 1=MinConceptVector, 2=AllSeqNN
