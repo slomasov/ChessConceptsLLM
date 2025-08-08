@@ -80,7 +80,7 @@ class DatasetStaticLoad(torch.utils.data.Dataset):
                 activations = activations[:, :, -1, :]  # Get the CLS token rep.
             past_activations.append(activations[activation_idx])
             if len(past_activations) == 50 or i == len(self.data) - 1:
-                batch_activations = torch.stack(past_activations).to(self.device)  # Move batch to GPU
+                batch_activations = torch.stack(past_activations).cpu()  # Move batch to GPU
                 if self.activations is None:
                     self.activations = batch_activations
                 else:
@@ -112,8 +112,8 @@ class DatasetStaticLoad(torch.utils.data.Dataset):
         else:
             neg_idx = self.negative_rows_idx[idx]
         pos_idx = self.positive_row_idx[idx]
-        neg_item = self.get_item(neg_idx)
-        pos_item = self.get_item(pos_idx)
+        neg_item = self.get_item(neg_idx).to(self.device)
+        pos_item = self.get_item(pos_idx).to(self.device)
         pos_item = pos_item.float()
         neg_item = neg_item.float()
         return pos_item, neg_item
