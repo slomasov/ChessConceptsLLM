@@ -31,7 +31,7 @@ MODEL_IDXS = [0,1,2]           # 0=LR, 1=MinConceptVector, 2=AllSeqNN
 
 GPUS             = [3,4,5,6]
 MAX_JOBS_PER_GPU = 5
-NUM_ITS          = 3       # forwarded to v2 script
+#NUM_ITS          = 3       # forwarded to v2 script
 # ──────────────────────────────────────────────────────────────── #
 
 SCRIPT = ABS / "concept_discovery_v2.py"
@@ -73,7 +73,8 @@ def build_cmd(gpu, train_pairs, test_pairs,
            "--seq_type", seq_type,
            "--model_idx", str(model_idx),
            "--redundant_train_holdout_frac", "0.5",
-           "--num_its", str(NUM_ITS)]
+           #"--num_its", str(NUM_ITS)
+    ]
     if test_paths:
         cmd += ["--test_csv_paths", *test_paths]
     if layer is not None:
