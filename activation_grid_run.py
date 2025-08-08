@@ -31,9 +31,9 @@ SEQ_TYPES  = ["activations"]
 MODEL_IDXS = [2]           # 0=LR, 1=MinConceptVector, 2=AllSeqNN
 
 
-MEM_THRESHOLD_MB = 8500
-GPUS             = [3,4,5,6]
-MAX_JOBS_PER_GPU = 8
+MEM_THRESHOLD_MB = 5500
+GPUS             = [0,1,2,3,4,5,6]
+MAX_JOBS_PER_GPU = 2
 
 def gpu_mem_used(gpu_id: int) -> int:
     """Return memory-used on gpu_id in MB (via nvidia-smi)."""
