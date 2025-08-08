@@ -61,8 +61,11 @@ def build_cmd(gpu, train_pairs, test_pairs,
     if test_names:
         datasets_tag += f"__test-{'+' .join(test_names)}"
 
+    # santize concept name for log
+    concept_log_name = concept.replace(" ", "_").replace("/", "_")
+
     log_name = (
-        f"{datasets_tag}__{concept}_L{layer}_{seq_type}_M{model_idx}_gpu{gpu}.log"
+        f"{datasets_tag}__{concept_log_name}_L{layer}_{seq_type}_M{model_idx}_gpu{gpu}.log"
     )
     log_path = LOGDIR / log_name
 
