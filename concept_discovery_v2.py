@@ -53,6 +53,7 @@ class DatasetStaticLoad(torch.utils.data.Dataset):
         self.all_sequence = all_sequence
         self.in_local = in_local
         self.device = device  # Device to preload data
+        self.mode = 'train'  # Default mode
         self.load_activations()
         if len(self.positive_row_idx) == 0 or len(self.negative_rows_idx) == 0:
             raise ValueError(
