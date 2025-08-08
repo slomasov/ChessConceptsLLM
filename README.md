@@ -308,5 +308,69 @@ python3 concept_discovery.py \
 ### Generated Output
 The script outputs the achieved accuracy and the loss of the classifier across 3 times of 6-fold cross-validation run for 100 epochs. 
 
+### Running the Concept Discovery (v2)
+
+Run the concept-discovery script **`concept_discovery_v2.py`** with the following arguments:
+
+| Flag | Purpose |
+|------|---------|
+| `--train_csv_paths` | **Required.** One or more metadata CSVs to be concatenated and used for training + internal cross-validation. |
+| `--test_csv_paths` | Optional list of CSVs reserved *only* for the final evaluation. If a CSV appears in **both** train and test lists, the script will split it, holding out a fraction (see next flag) for testing. |
+| `--redundant_train_holdout_frac` | Fraction *(0 – 1, default 0.5)* of any overlapping CSV that is withheld for the test set. |
+| `--concept_name` | The Boolean concept column to learn (`1` = positive, `0` = negative). |
+| `--layer_idx` | Transformer layer whose activations you want to use (ignored when `--seq_type input`). |
+| `--seq_type` | `activations` or `input`, telling the script whether to load hidden activations or raw input tokens. |
+| `--model_idx` | Which classifier to train:<br>**0** = Logistic Regression • **1** = Min Concept Vector • **2** = All Sequence NN |
+
+---
+
+#### Example 1 · Train on *A* + *B*, test on *C*
+
+```bash
+python3 concept_discovery_v2.py \
+  --train_csv_paths  <ABS>/data/concept_data/A_activations.csv \
+                     <ABS>/data/concept_data/B_activations.csv \
+  --test_csv_paths   <ABS>/data/concept_data/C_activations.csv \
+  --concept_name     sicilian \
+  --layer_idx        2 \
+  --seq_type         activations \
+  --model_idx        0
+```
+
+#### Example 2 · Train on *A* + 50% of *B*, test on 50% of *B* + *C*
+
+```bash
+python3 concept_discovery_v2.py \
+  --train_csv_paths  <ABS>/data/concept_data/A_activations.csv \
+                     <ABS>/data/concept_data/B_activations.csv \
+  --test_csv_paths   <ABS>/data/concept_data/B_activations.csv \
+                     <ABS>/data/concept_data/C_activations.csv \
+  --redundant_train_holdout_frac 0.5 \
+  --concept_name     sicilian \
+  --layer_idx        2 \
+  --seq_type         activations \
+  --model_idx        0
+```
+
+Sample Run:
+```bash
+# In repo root directory.
+
+ABSOLUTE_PATH=${PWD}
+
+nohup \
+python3 concept_discovery_v2.py \
+  --train_csv_paths "${ABSOLUTE_PATH}/searchless_chess/data/concept_data/lichess_puzzles_openings_activations.csv" \
+  --concept_name     sicilian \
+  --layer_idx        2 \
+  --seq_type         activations \
+  --model_idx        0 \
+> sicilian_concept_discovery.log 2>&1 &
+
+```
+
+
+
+
 ## Data Preprocessing
 The data preprocessing scripts are provided in the form of Jupyter notebooks. The notebooks are used to preprocess the datasets `lichess_puzzles_openings`, `stockfish_boolean_concepts_primary`, and `sts_all_concepts`, and generate the `.csv` files that are used for the activation recording and the concept discovery. The notebooks per dataset are provided under the `data_preprocessing` directory. 
