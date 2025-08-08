@@ -6,13 +6,13 @@ from pathlib import Path
 ABS = Path.cwd()  # assume repo root == current dir
 
 TRAIN_CSVS_1 = [
-    (ABS / "searchless_chess/data/concept_data/fischer_random_fen_activations.csv", "fischer_random"),
+   # (ABS / "searchless_chess/data/concept_data/fischer_random_fen_activations.csv", "fischer_random"),
     (None, None),
 ]
 
 TRAIN_CSVS_2 = [
     (ABS / "searchless_chess/data/concept_data/sts_all_concepts_activations.csv", "sts"),
-    (None, None),
+    #(None, None),
 ]
 
 TEST_CSVS = [
@@ -26,7 +26,9 @@ CONCEPTS   = ["Open", "Knight Outposts",
              "Advancement of f/g/h Pawns", "Advancement of a/b/c Pawns",
              "Center Control", "Pawn Play in the Center"]
 # CONCEPTS   = ["Open", "Advancement of f/g/h Pawns"]
+CONCEPTS = ["Pawn Play in the Center"]  # single concept for testing
 LAYER_IDS  = [2,5,10,15]
+LAYER_IDS  = [15]
 SEQ_TYPES  = ["activations"]
 MODEL_IDXS = [2]           # 0=LR, 1=MinConceptVector, 2=AllSeqNN
 
