@@ -30,7 +30,7 @@ SEQ_TYPES  = ["activations"]
 MODEL_IDXS = [0,1,2]           # 0=LR, 1=MinConceptVector, 2=AllSeqNN
 
 GPUS             = [3,4,5,6]
-MAX_JOBS_PER_GPU = 3
+MAX_JOBS_PER_GPU = 2
 #NUM_ITS          = 3       # forwarded to v2 script
 # ──────────────────────────────────────────────────────────────── #
 
