@@ -17,7 +17,7 @@ cd searchless_chess
 1. Install the required dependencies:
 ```bash
 pip install -r requirements.txt
-pip install --upgrade "jax[cuda12_pip]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+pip install --upgrade "jax[cuda12]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
 ```
 1. Download the model checkpoints:
 ```bash
@@ -29,61 +29,117 @@ cd ..
 Run the activation recording script for a given dataset. The possible datasets are listed under the `data/concept_data` directory with the names `lichess_puzzles_openings.csv`, `stockfish_boolean_concepts_primary.csv`, `sts_all_concepts.csv`. Here are the commands to run the activation recording script for these datasets (you should replace the `<Absolute Path>` with the absolute path of the repository):
 #### ``lichess_puzzles_openings`` Dataset
 ```bash
-npy_dir='<Absolute Path>/searchless_chess/data/concept_data/npys/opening/'
+// In repo root directory.
+
+ABSOLUTE_PATH=${PWD}
+npy_dir=${ABSOLUTE_PATH}/searchless_chess/data/concept_data/npys/opening/
+
 rm -rf $npy_dir
 mkdir $npy_dir
-cd src
+
+cd searchless_chess/src
+
+nohup \
 python3 activation_recorder.py \
-    --checkpoint_dir <Absolute Path>/searchless_chess/checkpoints/270M \
-    --csv <Absolute Path>/CS229/searchless_chess/data/concept_data/lichess_puzzles_openings.csv \
-    --npy_dir $npy_dir \
-    --csv_suffix _activations \
-    --batch_size 32 \
-    --position_key FEN \
-    --num_per_label 300 \
-    --last_cols_for_concept 7 \
-    --log_all_sequence True \
-    --save_step_count 1
+  --checkpoint_dir "${ABSOLUTE_PATH}/searchless_chess/checkpoints/270M" \
+  --csv "${ABSOLUTE_PATH}/searchless_chess/data/concept_data/lichess_puzzles_openings.csv" \
+  --npy_dir "$npy_dir" \
+  --csv_suffix _input_tokens \
+  --batch_size 32 \
+  --position_key FEN \
+  --num_per_label 300 \
+  --last_cols_for_concept 7 \
+  --log_all_sequence True \
+  --save_step_count 1 \
+  --log_only_input True \
+> lichess_puzzles_openings.log 2>&1 &
+
 cd ..
 ```
 #### ``stockfish_boolean_concepts_primary`` Dataset
 ```bash
-npy_dir='<Absolute Path>/searchless_chess/data/concept_data/npys/stockfish/'
+// In repo root directory.
+
+ABSOLUTE_PATH=${PWD}
+npy_dir=${ABSOLUTE_PATH}/searchless_chess/data/concept_data/npys/stockfish/
+
 rm -rf $npy_dir
 mkdir $npy_dir
-cd src
+
+cd searchless_chess/src
+
+nohup \
 python3 activation_recorder.py \
-    --checkpoint_dir <Absolute Path>/searchless_chess/checkpoints/270M \
-    --csv <Absolute Path>/CS229/searchless_chess/data/concept_data/stockfish_boolean_concepts_primary.csv \
-    --npy_dir $npy_dir \
-    --csv_suffix _activations \
-    --batch_size 32 \
-    --position_key FEN \
-    --num_per_label 300 \
-    --num_per_anti_label 300 \
-    --last_cols_for_concept 10 \
-    --log_all_sequence True \
-    --save_step_count 1
+  --checkpoint_dir "${ABSOLUTE_PATH}/searchless_chess/checkpoints/270M" \
+  --csv "${ABSOLUTE_PATH}/searchless_chess/data/concept_data/stockfish_boolean_concepts_primary.csv" \
+  --npy_dir "$npy_dir" \
+  --csv_suffix _activations \
+  --batch_size 32 \
+  --position_key FEN \
+  --num_per_label 300 \
+  --num_per_anti_label 300 \
+  --last_cols_for_concept 10 \
+  --log_all_sequence True \
+  --save_step_count 1 \
+> stockfish_boolean_concepts_primary.log 2>&1 &
+
 cd ..
 ```
 #### ``sts_all_concepts`` Dataset
 ```bash
-npy_dir='<Absolute Path>/searchless_chess/data/concept_data/npys/sts_all/'
+// In repo root directory.
+
+ABSOLUTE_PATH=${PWD}
+npy_dir=${ABSOLUTE_PATH}/searchless_chess/data/concept_data/npys/sts_all/
+
 rm -rf $npy_dir
 mkdir $npy_dir
-cd src
+
+cd searchless_chess/src
+
+nohup \
 python3 activation_recorder.py \
-    --checkpoint_dir <Absolute Path>/searchless_chess/checkpoints/270M \
-    --csv <Absolute Path>/searchless_chess/data/concept_data/sts_all_concepts.csv \
-    --npy_dir $npy_dir \
-    --csv_suffix _activations \
-    --batch_size 32 \
-    --log_all_sequence True \
-    --save_step_count 1 \
-    --last_cols_for_concept 15 \
-    --position_key Position
+  --checkpoint_dir "${ABSOLUTE_PATH}/searchless_chess/checkpoints/270M" \
+  --csv "${ABSOLUTE_PATH}/searchless_chess/data/concept_data/sts_all_concepts.csv" \
+  --npy_dir "$npy_dir" \
+  --csv_suffix _activations \
+  --batch_size 32 \
+  --log_all_sequence True \
+  --save_step_count 1 \
+  --last_cols_for_concept 15 \
+  --position_key Position \
+> sts_all_concepts.log 2>&1 &
+
 cd ..
 ```
+#### ``fischer_random`` Dataset
+```bash
+# In repo root directory.
+
+ABSOLUTE_PATH=${PWD}
+npy_dir=${ABSOLUTE_PATH}/searchless_chess/data/concept_data/npys/fischer_random/
+
+rm -rf $npy_dir
+mkdir $npy_dir
+
+cd searchless_chess/src
+
+nohup \
+python3 activation_recorder.py \
+  --checkpoint_dir "${ABSOLUTE_PATH}/searchless_chess/checkpoints/270M" \
+  --csv "${ABSOLUTE_PATH}/searchless_chess/data/concept_data/fischer_random_fen.csv" \
+  --npy_dir "$npy_dir" \
+  --csv_suffix _activations \
+  --batch_size 32 \
+  --log_all_sequence True \
+  --save_step_count 1 \
+  --last_cols_for_concept 1 \
+  --position_key FEN \
+> fischer_random.log 2>&1 &
+
+cd ..
+```
+
 ### Generated Output
 Under the `concept_data` directory, this generates the following:
 - ``*_activations.csv``: The metadata file that contains the board state FEN string, best move at the board, concept labels and the pointer to the recorded activations. Examples can be found under this directory.
@@ -92,64 +148,121 @@ Under the `concept_data` directory, this generates the following:
 Run the recording of the input tokens for a given dataset. This is for the concept discovery experiments where no learnable transformations are applied to the input tokens by the model, to assess the usefulness of the model representations for the concept modeling. Likewise, it could be run for the abovementioned datasets as follows:
 #### ``lichess_puzzles_openings`` Dataset
 ```bash
-npy_dir='<Absolute Path>/searchless_chess/data/concept_data/npys/opening_input_tokens/'
-rm -rf $npy_dir
-mkdir $npy_dir
-cd src
+# In repo root directory.
+
+ABSOLUTE_PATH=${PWD}
+npy_dir=${ABSOLUTE_PATH}/searchless_chess/data/concept_data/npys/opening_input_tokens/
+
+rm -rf "$npy_dir"
+mkdir -p "$npy_dir"
+
+cd searchless_chess/src
+
+nohup \
 python3 activation_recorder.py \
-    --checkpoint_dir /content/drive/Shareddrives/CS229/searchless_chess/checkpoints/270M \
-    --csv /content/drive/Shareddrives/CS229/searchless_chess/data/concept_data/lichess_puzzles_openings.csv \
-    --npy_dir $npy_dir \
-    --csv_suffix  _input_tokens \
-    --batch_size 32 \
-    --position_key FEN \
-    --num_per_label 300 \
-    --last_cols_for_concept 7 \
-    --log_all_sequence True \
-    --save_step_count 1 \
-    --log_only_input True
+  --checkpoint_dir "${ABSOLUTE_PATH}/searchless_chess/checkpoints/270M" \
+  --csv "${ABSOLUTE_PATH}/searchless_chess/data/concept_data/lichess_puzzles_openings.csv" \
+  --npy_dir "$npy_dir" \
+  --csv_suffix _input_tokens \
+  --batch_size 32 \
+  --position_key FEN \
+  --num_per_label 300 \
+  --last_cols_for_concept 7 \
+  --log_all_sequence True \
+  --save_step_count 1 \
+  --log_only_input True \
+> lichess_puzzles_openings_input.log 2>&1 &
+
 cd ..
 ```
 #### ``stockfish_boolean_concepts_primary`` Dataset
 ```bash
-npy_dir='<Absolute Path>/searchless_chess/data/concept_data/npys/stockfish_input_tokens/'
-rm -rf $npy_dir
-mkdir $npy_dir
-cd src
+# In repo root directory.
+
+ABSOLUTE_PATH=${PWD}
+npy_dir=${ABSOLUTE_PATH}/searchless_chess/data/concept_data/npys/stockfish_input_tokens/
+
+rm -rf "$npy_dir"
+mkdir -p "$npy_dir"
+
+cd searchless_chess/src
+
+nohup \
 python3 activation_recorder.py \
-    --checkpoint_dir <Absolute Path>/searchless_chess/checkpoints/270M \
-    --csv <Absolute Path>/searchless_chess/data/concept_data/stockfish_boolean_concepts_primary.csv \
-    --npy_dir $npy_dir \
-    --csv_suffix  _input_tokens \
-    --batch_size 32 \
-    --position_key FEN \
-    --num_per_label 300 \
-    --num_per_anti_label 300 \
-    --last_cols_for_concept 10 \
-    --log_all_sequence True \
-    --save_step_count 1 \
-    --log_only_input True
+  --checkpoint_dir "${ABSOLUTE_PATH}/searchless_chess/checkpoints/270M" \
+  --csv "${ABSOLUTE_PATH}/searchless_chess/data/concept_data/stockfish_boolean_concepts_primary.csv" \
+  --npy_dir "$npy_dir" \
+  --csv_suffix _input_tokens \
+  --batch_size 32 \
+  --position_key FEN \
+  --num_per_label 300 \
+  --num_per_anti_label 300 \
+  --last_cols_for_concept 10 \
+  --log_all_sequence True \
+  --save_step_count 1 \
+  --log_only_input True \
+> stockfish_input_tokens.log 2>&1 &
+
 cd ..
+
 ```
 #### ``sts_all_concepts`` Dataset
 ```bash
-npy_dir='<Absolute Path>/searchless_chess/data/concept_data/npys/sts_all_input_tokens/'
-rm -rf $npy_dir
-mkdir $npy_dir
-cd src
+# In repo root directory.
+
+ABSOLUTE_PATH=${PWD}
+npy_dir=${ABSOLUTE_PATH}/searchless_chess/data/concept_data/npys/sts_all_input_tokens/
+
+rm -rf "$npy_dir"
+mkdir -p "$npy_dir"
+
+cd searchless_chess/src
+
+nohup \
 python3 activation_recorder.py \
-    --checkpoint_dir <Absolute Path>/searchless_chess/checkpoints/270M \
-    --csv <Absolute Path>/searchless_chess/data/concept_data/sts_all_concepts.csv \
-    --npy_dir $npy_dir \
-    --csv_suffix _input_tokens \
-    --batch_size 32 \
-    --log_all_sequence True \
-    --save_step_count 1 \
-    --log_only_input True \
-    --last_cols_for_concept 15 \
-    --position_key Position
+  --checkpoint_dir "${ABSOLUTE_PATH}/searchless_chess/checkpoints/270M" \
+  --csv "${ABSOLUTE_PATH}/searchless_chess/data/concept_data/sts_all_concepts.csv" \
+  --npy_dir "$npy_dir" \
+  --csv_suffix _input_tokens \
+  --batch_size 32 \
+  --log_all_sequence True \
+  --save_step_count 1 \
+  --log_only_input True \
+  --last_cols_for_concept 15 \
+  --position_key Position \
+> sts_all_input_tokens.log 2>&1 &
+
 cd ..
 ```
+
+```bash
+# In repo root directory.
+
+ABSOLUTE_PATH=${PWD}
+npy_dir=${ABSOLUTE_PATH}/searchless_chess/data/concept_data/npys/fischer_random_input_tokens/
+
+rm -rf "$npy_dir"
+mkdir -p "$npy_dir"
+
+cd searchless_chess/src
+
+nohup \
+python3 activation_recorder.py \
+  --checkpoint_dir "${ABSOLUTE_PATH}/searchless_chess/checkpoints/270M" \
+  --csv "${ABSOLUTE_PATH}/searchless_chess/data/concept_data/fischer_random_fen.csv" \
+  --npy_dir "$npy_dir" \
+  --csv_suffix _input_tokens \
+  --batch_size 32 \
+  --log_all_sequence True \
+  --save_step_count 1 \
+  --log_only_input True \
+  --last_cols_for_concept 1 \
+  --position_key FEN \
+> fischer_random_input_tokens.log 2>&1 &
+
+cd ..
+```
+
 ### Generated Output
 Under the `concept_data` directory, this generates the following:
 - ``*_input_tokens.csv``: The metadata file that contains the board state FEN string, best move at the board, concept labels and the pointer to the recorded input tokens. Examples can be found under this directory.
@@ -194,6 +307,70 @@ python3 concept_discovery.py \
 
 ### Generated Output
 The script outputs the achieved accuracy and the loss of the classifier across 3 times of 6-fold cross-validation run for 100 epochs. 
+
+### Running the Concept Discovery (v2)
+
+Run the concept-discovery script **`concept_discovery_v2.py`** with the following arguments:
+
+| Flag | Purpose |
+|------|---------|
+| `--train_csv_paths` | **Required.** One or more metadata CSVs to be concatenated and used for training + internal cross-validation. |
+| `--test_csv_paths` | Optional list of CSVs reserved *only* for the final evaluation. If a CSV appears in **both** train and test lists, the script will split it, holding out a fraction (see next flag) for testing. |
+| `--redundant_train_holdout_frac` | Fraction *(0 – 1, default 0.5)* of any overlapping CSV that is withheld for the test set. |
+| `--concept_name` | The Boolean concept column to learn (`1` = positive, `0` = negative). |
+| `--layer_idx` | Transformer layer whose activations you want to use (ignored when `--seq_type input`). |
+| `--seq_type` | `activations` or `input`, telling the script whether to load hidden activations or raw input tokens. |
+| `--model_idx` | Which classifier to train:<br>**0** = Logistic Regression • **1** = Min Concept Vector • **2** = All Sequence NN |
+
+---
+
+#### Example 1 · Train on *A* + *B*, test on *C*
+
+```bash
+python3 concept_discovery_v2.py \
+  --train_csv_paths  <ABS>/data/concept_data/A_activations.csv \
+                     <ABS>/data/concept_data/B_activations.csv \
+  --test_csv_paths   <ABS>/data/concept_data/C_activations.csv \
+  --concept_name     sicilian \
+  --layer_idx        2 \
+  --seq_type         activations \
+  --model_idx        0
+```
+
+#### Example 2 · Train on *A* + 50% of *B*, test on 50% of *B* + *C*
+
+```bash
+python3 concept_discovery_v2.py \
+  --train_csv_paths  <ABS>/data/concept_data/A_activations.csv \
+                     <ABS>/data/concept_data/B_activations.csv \
+  --test_csv_paths   <ABS>/data/concept_data/B_activations.csv \
+                     <ABS>/data/concept_data/C_activations.csv \
+  --redundant_train_holdout_frac 0.5 \
+  --concept_name     sicilian \
+  --layer_idx        2 \
+  --seq_type         activations \
+  --model_idx        0
+```
+
+Sample Run:
+```bash
+# In repo root directory.
+
+ABSOLUTE_PATH=${PWD}
+
+nohup \
+python3 concept_discovery_v2.py \
+  --train_csv_paths "${ABSOLUTE_PATH}/searchless_chess/data/concept_data/lichess_puzzles_openings_activations.csv" \
+  --concept_name     sicilian \
+  --layer_idx        2 \
+  --seq_type         activations \
+  --model_idx        0 \
+> sicilian_concept_discovery.log 2>&1 &
+
+```
+
+
+
 
 ## Data Preprocessing
 The data preprocessing scripts are provided in the form of Jupyter notebooks. The notebooks are used to preprocess the datasets `lichess_puzzles_openings`, `stockfish_boolean_concepts_primary`, and `sts_all_concepts`, and generate the `.csv` files that are used for the activation recording and the concept discovery. The notebooks per dataset are provided under the `data_preprocessing` directory. 
