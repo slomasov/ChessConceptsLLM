@@ -1,5 +1,5 @@
-# CS229 - Concept Discovery
-This project's code is based on the code of [Amortized Planning with Large-Scale Transformers: A Case Study on Chess](https://github.com/google-deepmind/searchless_chess) by DeepMind. The code is modified and is shared under the `searchless_chess` directory. There are two main modifications:
+# Exploring Human-AI Conceptual Alignment through the Prism of Chess
+This repository is based on the code of [Amortized Planning with Large-Scale Transformers: A Case Study on Chess](https://github.com/google-deepmind/searchless_chess) by DeepMind. The code is modified and is shared under the `searchless_chess` directory. There are two main modifications:
 1. ``Activation Recording``: The provided model is modified to log the activations at each layer for a given chess board FEN string and the candidate move. The activations of the best move at a given board state are saved to be used for the concept discovery.
 2. ``Concept Discovery``: The activations and the corresponding concept labels for a board state are used to train a classifier to predict the concept labels. The classifier takes the activations as its input and predicts the concept labels.
 3. ``Data Preprocessing``: The data preprocessing scripts (.ipynb files) are provided, which were used to preprocess the datasets for the activation recording and the concept discovery.
@@ -10,16 +10,16 @@ To record the activations of the model, the following steps are required (which 
 ```bash
 git clone
 ```
-1. Navigate to the `searchless_chess` directory:
+2. Navigate to the `searchless_chess` directory:
 ```bash
 cd searchless_chess
 ```
-1. Install the required dependencies:
+3. Install the required dependencies:
 ```bash
 pip install -r requirements.txt
 pip install --upgrade "jax[cuda12]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
 ```
-1. Download the model checkpoints:
+4. Download the model checkpoints:
 ```bash
 cd checkpoints
 bash ./download.sh
